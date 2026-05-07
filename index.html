@@ -1198,8 +1198,8 @@
       window.addEventListener("load", () => {
         setTimeout(() => {
           document.getElementById("loading").classList.add("hidden");
+          // Langsung tampilkan popup setelah loading fade-out selesai
           setTimeout(() => {
-            startHeroTyping();
             showPopup();
           }, 1600);
         }, 2600);
@@ -1225,44 +1225,20 @@
           : musicBtn.classList.remove("playing");
       }
 
-      function autoPlayMusic() {
-        audio.muted = true; // ✅ muted dulu supaya browser izinkan
+      // ✅ Dipanggil saat user pencet tombol popup — dijamin browser izinkan karena ada interaksi
+      function startMusicOnInteraction() {
+        if (isPlaying) return;
+        audio.muted = false;
         audio.volume = 0.45;
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              audio.muted = false; // ✅ langsung unmute → suara keluar tanpa tap
-              setPlayingUI(true);
-              // Tampilkan hint sebentar lalu hilang
-              musicHint.textContent = "🎵 Musik otomatis berputar";
-              musicHint.classList.add("show");
-              setTimeout(() => musicHint.classList.remove("show"), 3500);
-            })
-            .catch(() => {
-              // Kalau masih diblokir (sangat jarang), fallback ke first-tap
-              setPlayingUI(false);
-              musicHint.textContent = "🎵 Tap layar untuk play musik";
-              musicHint.classList.add("show");
-              setTimeout(() => musicHint.classList.remove("show"), 5000);
-
-              const events = ["click", "touchstart", "keydown"];
-              function onFirst() {
-                audio.muted = false;
-                audio.volume = 0.45;
-                audio
-                  .play()
-                  .then(() => setPlayingUI(true))
-                  .catch(() => {});
-                events.forEach((ev) =>
-                  document.removeEventListener(ev, onFirst),
-                );
-              }
-              events.forEach((ev) =>
-                document.addEventListener(ev, onFirst, { once: true }),
-              );
-            });
-        }
+        audio
+          .play()
+          .then(() => {
+            setPlayingUI(true);
+            musicHint.textContent = "🎵 Musik sedang berputar";
+            musicHint.classList.add("show");
+            setTimeout(() => musicHint.classList.remove("show"), 3000);
+          })
+          .catch(() => {});
       }
 
       function toggleMusic() {
@@ -1279,19 +1255,17 @@
         }
       }
 
-      // Jalankan setelah halaman siap
-      window.addEventListener("load", () => setTimeout(autoPlayMusic, 300));
-
       // ── POPUP ──
       function showPopup() {
-        setTimeout(
-          () =>
-            document.getElementById("popup-overlay").classList.add("visible"),
-          5200,
-        );
+        // Langsung tampilkan popup tanpa delay tambahan
+        document.getElementById("popup-overlay").classList.add("visible");
       }
       function closePopup() {
         document.getElementById("popup-overlay").classList.remove("visible");
+        // ✅ Musik mulai saat tombol popup dipencet
+        startMusicOnInteraction();
+        // Hero typing mulai setelah popup ditutup
+        setTimeout(startHeroTyping, 400);
       }
 
       // ── HERO TYPING ──
